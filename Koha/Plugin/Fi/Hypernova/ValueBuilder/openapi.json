@@ -1,0 +1,100 @@
+{
+  "/catalogue/valuebuilder": {
+    "get": {
+      "x-mojo-to": "Fi::Hypernova::ValueBuilder::Controller#get_valuebuilder",
+      "operationId": "valuebuilder",
+      "parameters": [
+        {
+          "description": "MARC frameworkcode",
+          "in": "query",
+          "name": "frameworkcode",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "MARC Framework fieldcode",
+          "in": "query",
+          "name": "fieldcode",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "MARC Framework subfieldcode",
+          "in": "query",
+          "name": "subfieldcode",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Library identifier",
+          "in": "query",
+          "name": "branchcode",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Item's item type",
+          "in": "query",
+          "name": "itemtype",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "description": "Item's MARC Record's biblionumber",
+          "in": "query",
+          "name": "biblionumber",
+          "required": false,
+          "type": "number"
+        }
+      ],
+      "produces": [
+        "application/json"
+      ],
+      "responses": {
+        "200": {
+          "description": "value",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "204": {
+          "description": "Builder not configured for the given parameters",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "400": {
+          "description": "Bad request",
+          "schema": {
+            "type": "object",
+            "properties": {
+              "error": {
+                "description": "An explanation for the error",
+                "type": "string"
+              }
+            }
+          }
+        },
+        "500": {
+          "description": "Internal server error"
+        }
+      },
+      "x-koha-authorization": {
+        "permissions": {
+          "catalogue": "1"
+        }
+      }
+    }
+  }
+}

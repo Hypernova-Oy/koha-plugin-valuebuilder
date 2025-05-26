@@ -1,0 +1,135 @@
+[% INCLUDE 'doc-head-open.inc' %]
+ <title>Koha: MARC Framework ValueBuilder: Configuration</title>
+[% INCLUDE 'doc-head-close.inc' %]
+</head>
+<body>
+[% INCLUDE 'header.inc' %]
+[% INCLUDE 'cat-search.inc' %]
+
+<div id="breadcrumbs"><a href="/cgi-bin/koha/mainpage.pl">Home</a> &rsaquo; <a href="/cgi-bin/koha/plugins/plugins-home.pl">Plugins</a> &rsaquo; Incremental Pattern Barcode Generator &rsaquo; Configuration</div>
+
+<div id="doc3">
+    <!-- We can access our own plugins resource files using the PLUGIN_PATH variable. -->
+    <h3>Koha: ValueBuilder Plugin: Configuration</h3>
+
+    <div>
+        <h3>Test data</h3>
+        <label for="mfw_vb_itemtype">Itemtype:</label><input type="text" id="mfw_vb_itemtype" value="BK"/>
+        <label for="mfw_vb_branchcode">Branchcode:</label><input type="text" id="mfw_vb_branchcode" value="CPL"/>
+        <label for="mfw_vb_biblionumber">Biblionumber:</label><input type="text" id="mfw_vb_biblionumber" value="1001"/>
+    </div>
+
+    <table>
+        <caption>Item's MARC subfield value builders</caption>
+        <tr>
+            <th>Subfield</th>
+            <th>Other attributes</th>
+            <th>Pattern</th>
+            <th>Trigger</th>
+            <th>Save</th>
+            <th>Delete</th>
+            <th>Test</th>
+        </tr>
+        [% FOREACH sf_struct IN item_marc_subfield_structures %]
+        [%     builder = valuebuilders.get(sf_struct.frameworkcode, sf_struct.tagfield, sf_struct.tagsubfield) || {} %]
+        <form method="post" action="/cgi-bin/koha/plugins/run.pl">
+            [% INCLUDE 'csrf-token.inc' %]
+            <input type="hidden" name="class" value="[% CLASS %]"/>
+            <input type="hidden" name="method" value="save_builder"/>
+            <input type="hidden" name="frameworkcode" value="[% sf_struct.frameworkcode %]">
+            <input type="hidden" name="fieldcode" value="[% sf_struct.tagfield %]">
+            <input type="hidden" name="subfieldcode" value="[% sf_struct.tagsubfield %]">
+            <tr>
+                <td>
+                    [% sf_struct.liblibrarian %] [% sf_struct.frameworkcode %] [% sf_struct.tagfield %]$[% sf_struct.tagsubfield %]
+                </td>
+                <td>
+                    [% FOREACH colname IN sf_struct.keys() %]
+                    [%     IF 0 %]
+                    <span class="sf_struct_attrib">[% colname %]=[% sf_struct.item(colname) %]</span><br/>
+                    [%     END %]
+                    [% END %]
+                </td>
+                <td>
+                    <textarea id="b-pattern" name="pattern" cols="50" rows="1" required>[% builder.pattern %]</textarea>
+                </td>
+                <td>
+                    <select id="b-trigger" name="trigger" title="Select trigger" required>
+                    <option value="">Select trigger</option>
+                    [% FOREACH trigger IN available_triggers %]
+                        <option value="[% trigger.name %]" [% IF trigger.name == builder.trigger %]selected[% END %]>[% trigger.name %]</option>
+                    [% END # / FOREACH trigger %]
+                    </select>
+                </td>
+                <td>
+                    <input type="submit" value="Save"/>
+                </td>
+        </form>
+                <td>
+                    <form method="post" action="/cgi-bin/koha/plugins/run.pl" style="display:inline;">
+                        [% INCLUDE 'csrf-token.inc' %]
+                        <input type="hidden" name="class" value="[% CLASS %]"/>
+                        <input type="hidden" name="method" value="delete_builder"/>
+                        <input type="hidden" name="frameworkcode" value="[% sf_struct.frameworkcode %]">
+                        <input type="hidden" name="fieldcode" value="[% sf_struct.tagfield %]">
+                        <input type="hidden" name="subfieldcode" value="[% sf_struct.tagsubfield %]">
+                        <input type="submit" value="Delete" onclick="return confirm('Are you sure you want to delete this builder?');"/>
+                    </form>
+                </td>
+                <td>
+                    <input type="button" value="Test" onclick="mfw_vb_testBuilder('[% sf_struct.frameworkcode %]', '[% sf_struct.tagfield %]', '[% sf_struct.tagsubfield %]')"/>
+                    <label for="mfw_vb_test_result">Result:</label><input type="text" id="mfw_vb_test_result[% sf_struct.frameworkcode %][% sf_struct.tagfield %][% sf_struct.tagsubfield %]" value=""/>
+                </td>
+            </tr>
+        [% END # / FOREACH sf_struct %]
+    </table>
+
+    <h3>Available subroutines</h3>
+    [% FOREACH fun IN available_subroutines %]
+    <div>
+        <h4>[% fun.name %]</h4>
+        <pre>[% fun.documentation %]</pre>
+    </div>
+    [% END # / FOREACH fun %]
+
+    <h3>Available triggers</h3>
+    [% FOREACH tri IN available_triggers %]
+    <div>
+        <h4>[% tri.name %]</h4>
+        <pre>[% tri.documentation %]</pre>
+    </div>
+    [% END # / FOREACH fun %]
+
+</div>
+[% INCLUDE 'intranet-bottom.inc' %]
+
+<script type="text/javascript">
+
+function mfw_vb_testBuilder(frameworkcode, fieldcode, subfieldcode) {
+    var itemtype = document.getElementById('mfw_vb_itemtype').value;
+    var branchcode = document.getElementById('mfw_vb_branchcode').value;
+    var biblionumber = document.getElementById('mfw_vb_biblionumber').value;
+    var url = '/api/v1/contrib/hypernova/catalogue/valuebuilder'
+     + '?frameworkcode=' + frameworkcode
+     + '&fieldcode=' + fieldcode
+     + '&subfieldcode=' + subfieldcode
+     + '&itemtype=' + itemtype
+     + '&branchcode=' + branchcode
+     + '&biblionumber=' + biblionumber;
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.value) {
+                document.getElementById('mfw_vb_test_result'+frameworkcode+fieldcode+subfieldcode).value = data.value;
+            }
+            else {
+                throw Error(data.error);
+            }
+        })
+        .catch(error => {
+            console.log(error);
+            alert('Error:', error);
+        });
+}
+
+</script>
