@@ -61,7 +61,7 @@ subtest("Scenario: Get Subroutine documentation.", sub {
   });
 
   subtest("Test documentation", sub {
-    plan tests => 8;
+    plan tests => 10;
 
     for (my $i=0 ; $i<@{$subroutines} ; $i++) {
       my $sub = $subroutines->[$i];
@@ -75,7 +75,7 @@ subtest("Scenario: Get Subroutine documentation.", sub {
 subtest("Scenario: Test VB Subroutines.", sub {
   my ($url, $vbs, $bib);
 
-  plan tests => 6;
+  plan tests => 8;
 
   subtest("Given Valuebuilders", sub {
     plan tests => 2;
@@ -181,6 +181,21 @@ subtest("Scenario: Test VB Subroutines.", sub {
     $t->get_ok($url)
     ->status_is('200')
     ->json_like('/value', qr/${year}v002/, "Increment to 100");
+  };
+
+  subtest "f008_infer" => sub {
+    plan tests => 6;
+    my $yymmdd = DateTime->now(time_zone => C4::Context->tz)->strftime("%y%m%d");
+
+    $url->query({fieldcode => '008', subfieldcode => '@', currentvalue => '000000n||||####xx#||||||||||||f|||||||||'});
+    $t->get_ok($url);
+    $t->status_is('200')
+    ->json_like('/value', qr/^${yymmdd}/, "date entered on file set");
+
+    $url->query({fieldcode => '008', subfieldcode => '@', currentvalue => '250102n||||####xx#||||||||||||f|||||||||', biblionumber => 9999999});
+    $t->get_ok($url)
+    ->status_is('200', 'Returns a reasonable value even without a biblio')
+    ->json_like('/value', qr/^250102/, "date entered on file not overwritten");
   };
 });
 

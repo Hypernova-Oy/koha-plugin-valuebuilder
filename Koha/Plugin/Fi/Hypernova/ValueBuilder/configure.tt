@@ -30,7 +30,7 @@
             <th>Delete</th>
             <th>Test</th>
         </tr>
-        [% FOREACH sf_struct IN item_marc_subfield_structures %]
+        [% FOREACH sf_struct IN marc_subfield_structures %]
         [%     builder = valuebuilders.get(sf_struct.frameworkcode, sf_struct.tagfield, sf_struct.tagsubfield) || {} %]
         <form method="post" action="/cgi-bin/koha/plugins/run.pl">
             [% INCLUDE 'csrf-token.inc' %]

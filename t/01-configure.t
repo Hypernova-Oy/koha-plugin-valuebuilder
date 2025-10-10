@@ -153,8 +153,10 @@ subtest("Scenario: Simple plugin lifecycle tests.", sub {
   subtest("intranet_js", sub {
     plan tests => 1;
 
+    t::Lib::CGIreset($plugin);
+    $ENV{SCRIPT_NAME} = '/cgi-bin/koha/cataloguing/additem.pl';
+
     my $js = $plugin->intranet_js();
-    #print $js;
     ok($js =~ m!mfw_vb_bind_valuebuilder!gsm, "mfw_vb_bind_valuebuilder rendered");
   });
 });

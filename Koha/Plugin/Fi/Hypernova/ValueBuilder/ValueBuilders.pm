@@ -92,10 +92,12 @@ sub delete {
 }
 
 sub retrieveAll {
-  my ($self) = @_;
+  my ($self, $kohaPage) = @_;
 
   my $dbh = C4::Context->dbh;
   my $sql = "SELECT plugin_key, plugin_value FROM plugin_data WHERE plugin_class = ?";
+  $sql .= " AND plugin_key LIKE '\%->952\$\%'" if ($kohaPage eq 'additem.pl'); # Show only Item subfields for item editing views.
+  $sql .= " AND plugin_key NOT LIKE '\%->952\$\%'" if ($kohaPage eq 'addbiblio.pl'); # Show only Item subfields for item editing views.
   my $sth = $dbh->prepare($sql);
   $sth->execute($plugin->{class});
   my $rows = $sth->fetchall_arrayref({});

@@ -31,10 +31,12 @@ sub configure {
 
   my $template = $plugin->get_template( { file => _absPath($plugin, 'configure.tt') } );
 
+  my $marc_subfield_structures = [@{GetMARCFrameworkSubfields('', '952')}, @{GetMARCFrameworkSubfields('', '008', '@')}];
+
   $template->param(
     available_subroutines => Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Subroutine::ListAvailable(),
     available_triggers => Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Trigger::ListAvailable(),
-    item_marc_subfield_structures => GetMARCFrameworkSubfields('', '952'),
+    marc_subfield_structures => $marc_subfield_structures,
     valuebuilders => Koha::Plugin::Fi::Hypernova::ValueBuilder::ValueBuilders->new($plugin)->retrieveAll,
   );
 
@@ -43,12 +45,19 @@ sub configure {
 }
 
 sub GetMARCFrameworkSubfields {
-  my ($fieldcode, $subfieldcode) = @_;
+  my ($frameworkcode, $fieldcode, $subfieldcode) = @_;
   my $dbh = C4::Context->dbh();
 
-  my $sth = $dbh->prepare("SELECT * FROM marc_subfield_structure WHERE frameworkcode = ? AND tagfield = ?");
-  $sth->execute($fieldcode, $subfieldcode);
-  return $sth->fetchall_arrayref({});
+  if (defined($subfieldcode)) {
+    my $sth = $dbh->prepare("SELECT * FROM marc_subfield_structure WHERE frameworkcode = ? AND tagfield = ? AND tagsubfield = ?");
+    $sth->execute($frameworkcode, $fieldcode, $subfieldcode);
+    return $sth->fetchall_arrayref({});
+  }
+  else {
+    my $sth = $dbh->prepare("SELECT * FROM marc_subfield_structure WHERE frameworkcode = ? AND tagfield = ?");
+    $sth->execute($frameworkcode, $fieldcode);
+    return $sth->fetchall_arrayref({});
+  }
 }
 
 sub _absPath {

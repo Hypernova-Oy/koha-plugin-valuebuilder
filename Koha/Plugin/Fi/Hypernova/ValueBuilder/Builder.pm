@@ -65,7 +65,7 @@ sub subfieldcode {
 sub ParseCGIKey {
   my ($keyString) = @_;
 
-  if ($keyString =~ m!^(?<frameworkcode>.*)->(?<fieldcode>\d\d\d)\$(?<subfieldcode>\w)->(?<attribute>\w+)$!) {
+  if ($keyString =~ m!^(?<frameworkcode>.*)->(?<fieldcode>\d\d\d)\$(?<subfieldcode>[a-z0-9@])->(?<attribute>\w+)$!) {
     return \%+;
   }
   return undef;
@@ -104,7 +104,7 @@ sub serializeJSON {
 
 sub IsKey {
   my ($key) = @_;
-  if ($key =~ m!^(?<frameworkcode>.*)->(?<fieldcode>\d\d\d)\$(?<subfieldcode>\w)$!) {
+  if ($key =~ m!^(?<frameworkcode>.*)->(?<fieldcode>\d\d\d)\$(?<subfieldcode>[a-z0-9@])$!) {
     return 1;
   }
   return 0;

@@ -73,6 +73,7 @@ sub build_valuebuilders_advanced {
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'a', trigger => 'trigger',  pattern => '<bib_class(,a)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'b', trigger => 'trigger',  pattern => '<bib_class(084,a)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'x', trigger => 'trigger',  pattern => '<bib_class(084,a)><signum>'});
+  $vbs->add({frameworkcode => '', fieldcode => '008', subfieldcode => '@', trigger => 'triggered',pattern => '<f008_infer>'});
   return $vbs;
 }
 

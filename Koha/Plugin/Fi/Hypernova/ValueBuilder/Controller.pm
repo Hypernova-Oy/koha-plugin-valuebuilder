@@ -30,11 +30,9 @@ A class implementing the controller methods for the barcode generating endpoints
 =cut
 
 sub get_valuebuilder {
-  my ($c);
+  my $c = shift->openapi->valid_input or return;
   my %response;
   eval {
-    $c = shift->openapi->valid_input or return;
-
     my $frameworkcode = $c->validation->param('frameworkcode');
     my $fieldcode = $c->validation->param('fieldcode');
     my $subfieldcode = $c->validation->param('subfieldcode');
@@ -48,9 +46,10 @@ sub get_valuebuilder {
       return %response = (status => 204, openapi => {error => "Builder(frameworkcode='$frameworkcode', fieldcode='$fieldcode', subfieldcode='$subfieldcode') disabled"});
     }
     $builder->pattern->locals({
-      branchcode => $c->validation->param('branchcode'),
-      itemtype => $c->validation->param('itemtype'),
       biblionumber => $c->validation->param('biblionumber'),
+      branchcode => $c->validation->param('branchcode'),
+      currentvalue => $c->validation->param('currentvalue'),
+      itemtype => $c->validation->param('itemtype'),
     });
 
     return %response = (status => 200, openapi => {value => $builder->pattern->render()});

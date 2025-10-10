@@ -3,6 +3,11 @@ package t::Lib;
 use strict;
 use warnings;
 
+sub CGIreset { my ($plugin) = @_;
+    CGI::initialize_globals();
+    $plugin->{cgi}->CLEAR() if $plugin->{cgi};
+}
+
 package Koha::Plugin::Fi::Hypernova::ValueBuilder;
 
 our %http_response = (
@@ -52,9 +57,6 @@ sub request_method {
 }
 sub header {
     return "";
-}
-sub script_name {
-    return "additem.pl";
 }
 
 1;

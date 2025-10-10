@@ -26,6 +26,13 @@
           "type": "string"
         },
         {
+          "description": "Current value that is to be replaced/edited",
+          "in": "query",
+          "name": "currentvalue",
+          "required": false,
+          "type": "string"
+        },
+        {
           "description": "Library identifier",
           "in": "query",
           "name": "branchcode",

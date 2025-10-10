@@ -34,8 +34,9 @@ sub new {
   my ($class, $locals) = @_;
 
   die __PACKAGE__." 'biblionumber' missing!" unless (exists $locals->{biblionumber});
-  die __PACKAGE__." 'itemtype' missing!" unless (exists $locals->{itemtype});
   die __PACKAGE__." 'branchcode' missing!" unless (exists $locals->{branchcode});
+  die __PACKAGE__." 'currentvalue' missing!" unless (exists $locals->{currentvalue});
+  die __PACKAGE__." 'itemtype' missing!" unless (exists $locals->{itemtype});
 
   return bless($locals, $class);
 }
@@ -44,12 +45,16 @@ sub biblionumber {
   return shift->{biblionumber};
 }
 
-sub itemtype {
-  return shift->{itemtype};
-}
-
 sub branchcode {
   return shift->{branchcode};
+}
+
+sub currentvalue {
+  return shift->{currentvalue};
+}
+
+sub itemtype {
+  return shift->{itemtype};
 }
 
 1;

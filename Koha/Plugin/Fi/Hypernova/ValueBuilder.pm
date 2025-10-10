@@ -71,20 +71,23 @@ sub valuebuilders {
 sub intranet_js {
   my ($self) = @_;
   my $cgi = $self->{'cgi'};
-  return unless ($cgi->script_name =~ /additem\.pl/);
+  return unless ($cgi->script_name =~ /(
+    (?:additem\.pl)|
+    (?:addbiblio\.pl)
+  )/x);
+  my $kohaPage = $1;
 
-  my $vbs = $self->valuebuilders->retrieveAll->list;
+  my $vbs = $self->valuebuilders->retrieveAll($kohaPage)->list;
   return '' unless $vbs && @$vbs;
 
   return
-  "  <script>\n" .
-  "  if (document.getElementById('cataloguing_additem_newitem')) {\n" .
-  "    document.addEventListener('DOMContentLoaded', function () {\n" .
-          Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Trigger::renderHelperFunctions() . "\n" .
-          join("\n", map { "mfw_vb_bind_valuebuilder('" . $_->frameworkcode . "','" . $_->fieldcode . "','" . $_->subfieldcode . "','" . $_->trigger . "');" } @$vbs) . "\n" .
-  "    });\n" .
-  "  }\n" .
-  "  </script>\n";
+  "<script>\n" .
+  "document.addEventListener('DOMContentLoaded', function () {\n" .
+  "let mfw_vb_kohaPage = '$kohaPage';\n".
+   Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Trigger::renderHelperFunctions() . "\n" .
+   join("\n", map { "mfw_vb_bind_valuebuilder('".$_->pattern->TO_STRING."','" . $_->frameworkcode . "','" . $_->fieldcode . "','" . $_->subfieldcode . "','" . $_->trigger . "');" } @$vbs) . "\n" .
+  "});\n" .
+  "</script>\n";
 }
 
 sub api_routes {
@@ -123,6 +126,13 @@ sub install {
       subfieldcode => 'p',
       pattern => '<incremental_pattern_barcode(PRE000000SUF)>',
       trigger => 'onsave',
+    }));
+    $self->valuebuilders->add(Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder->new({
+      frameworkcode => '',
+      fieldcode => '008',
+      subfieldcode => '@',
+      pattern => '<f008_infer>',
+      trigger => 'triggered',
     }));
     $self->valuebuilders->store();
   };

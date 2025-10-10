@@ -148,6 +148,52 @@ sub __bib_class {
   return join(" ", @sb);
 }
 
+=head2 f008_infer
+
+Populate controlfield 008 from other MARC21-fields, such as:
+- 00-05 date entered on file is created if it is '000000' or '||||||' or '      '
+- language from 041$a
+- publication country from 044$a
+
+Requires the MARC21-field to be populated for example from a MARC Framework default
+
+=cut
+
+sub __f008_infer {
+  my ($self, $pattern) = @_;
+
+  my ($value, $biblionumber) = ($pattern->locals->currentvalue, $pattern->locals->biblionumber);
+  return undef unless $value;
+
+  my $biblio = Koha::Biblios->find($biblionumber);
+  my $record = $biblio->record if $biblio;
+
+  my %cps;
+  if ($value =~ /^(?<dateonfile>......)(?<p1>.........)(?<placeofpub>...)(?<p2>.................)(?<lang>...)(?<p3>..)$/) {
+    %cps = %+;
+    if ($cps{dateonfile} =~ /^[0 |#]{6}$/) {
+      $cps{dateonfile} = DateTime->now(time_zone => C4::Context->tz)->strftime('%y%m%d');
+    }
+    if ($cps{placeofpub} =~ /^[ |#]{3}$/ && $record && $record->subfield('044', 'a')) {
+      $cps{placeofpub} = $record->subfield('044', 'a');
+      while (length($cps{placeofpub}) < 3) {
+        $cps{placeofpub} .= '#';
+      }
+    }
+    if ($cps{lang} =~ /^[ |#]{3}$/ && $record && $record->subfield('041', 'a')) {
+      $cps{lang} = $record->subfield('041', 'a');
+      while (length($cps{lang}) < 3) {
+        $cps{lang} .= '#';
+      }
+    }
+  }
+  else {
+    return "f008_infer:> Unable to parse value '$value'";
+  }
+
+  return $cps{dateonfile}.$cps{p1}.$cps{placeofpub}.$cps{p2}.$cps{lang}.$cps{p3};
+}
+
 =head2 incremental_pattern_barcode
 
 Generate an incremental barcode from a pattern.
