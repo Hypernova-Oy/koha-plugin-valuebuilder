@@ -21,7 +21,8 @@ use Modern::Perl;
 use strict;
 use warnings;
 use Carp::Always;
-
+use Date::Manip::Date;
+use DateTime::Format::Strptime;
 use Pod::Simple::Text;
 
 use C4::Context;
@@ -154,6 +155,7 @@ Populate controlfield 008 from other MARC21-fields, such as:
 - 00-05 date entered on file is created if it is '000000' or '||||||' or '      '
 - language from 041$a
 - publication country from 044$a
+- dates from 260$c, 264$c, 362$a
 
 Requires the MARC21-field to be populated for example from a MARC Framework default
 
@@ -169,11 +171,12 @@ sub __f008_infer {
   my $record = $biblio->record if $biblio;
 
   my %cps;
-  if ($value =~ /^(?<dateonfile>......)(?<p1>.........)(?<placeofpub>...)(?<p2>.................)(?<lang>...)(?<p3>..)$/) {
+  if ($value =~ /^(?<dateonfile>......)(?<typeofdate>.)(?<date1>....)(?<date2>....)(?<placeofpub>...)(?<p1>.................)(?<lang>...)(?<p2>..)$/) {
     %cps = %+;
     if ($cps{dateonfile} =~ /^[0 |#]{6}$/) {
       $cps{dateonfile} = DateTime->now(time_zone => C4::Context->tz)->strftime('%y%m%d');
-    }
+    }    
+    ($cps{typeofdate}, $cps{date1}, $cps{date2}) = $self->_getDatesFromFields($record, $cps{typeofdate}, $cps{date1}, $cps{date2});
     if ($cps{placeofpub} =~ /^[ |#]{3}$/ && $record && $record->subfield('044', 'a')) {
       $cps{placeofpub} = $record->subfield('044', 'a');
       while (length($cps{placeofpub}) < 3) {
@@ -191,7 +194,128 @@ sub __f008_infer {
     return "f008_infer:> Unable to parse value '$value'";
   }
 
-  return $cps{dateonfile}.$cps{p1}.$cps{placeofpub}.$cps{p2}.$cps{lang}.$cps{p3};
+  return $cps{dateonfile}.$cps{typeofdate}.$cps{date1}.$cps{date2}.$cps{placeofpub}.$cps{p1}.$cps{lang}.$cps{p2};
+}
+
+sub _getDatesFromFields {
+  my ($self, $record, $typeofdate, $date1, $date2) = @_;
+
+  return ('|', '####', '####') unless $record;
+
+  sub _gDFFdateParse {
+    my ($datestr, $recursing) = @_;
+    my ($typeofdate, $date1, $date2) = ('|', undef, undef);
+
+    return ($typeofdate, $date1, $date2) unless defined $datestr;
+
+    $datestr =~ s/^\s+|\s+$//g; # trim()
+    $datestr =~ s/\.$//g; # remove trailing .
+    eval {
+      # yyyy
+      return unless $datestr =~ /^[0-9]{1,4}$/;
+      $date1 = $datestr;
+    };
+    return ($typeofdate, $date1, $date2) if $date1;
+    eval {
+      # yyyy-yyyy OR yyyy,yyyyy
+      my %_cps;
+      if ($datestr =~ /^(?<date1>[0-9]{1,4})[-,](?<date2>[0-9]{1,4})$/) {
+        %_cps = %+;
+        $date1 = $_cps{date1};
+        $date2 = $_cps{date2};    
+      }
+    };
+    return ($typeofdate, $date1, $date2) if $date1;
+    eval {
+      # yyyy-
+      my %_cps;
+      if ($datestr =~ /^(?<date1>[0-9]{1,4})-$/) {
+        %_cps = %+;
+        $date1 = $_cps{date1};
+        $date2 = 9999;
+        $typeofdate = 'c';
+      }
+    };
+    return ($typeofdate, $date1, $date2) if $date1;
+    eval {
+      # dd.mm.YYYY
+      if ($datestr =~ /\d\d?\.\d\d?\.\d\d\d\d?/) {
+        my $strp = DateTime::Format::Strptime->new(pattern => '%d.%m.%Y');
+        my $dt = $strp->parse_datetime($datestr);
+        $date1 = sprintf("%04d", $dt->year);
+        $date2 = sprintf("%02d", $dt->month) . sprintf("%02d", $dt->day);
+        $typeofdate = 'e';
+      }
+    };
+    return ($typeofdate, $date1, $date2) if $date1;
+    eval {
+      # Date::Manip::Date to parse many (but not any) formats
+      my $date_manip = new Date::Manip::Date;
+      $date_manip->config("Format_MMMYYYY", "first");
+      $date_manip->set('zone', '+0000');
+      $date_manip->set('time', "00:00:00");
+      my $err = $date_manip->parse($datestr);
+      my ($year, $month, $day) = ('####', '##', '##');
+      unless ($err) {
+        $year = $date_manip->printf("%Y");
+        $month = $date_manip->printf("%m");
+        $day = $date_manip->printf("%d");
+      } else {
+        return;
+      }
+
+      my $parsed_date = "$year$month$day";
+
+      return unless $parsed_date;
+      if ($parsed_date =~ /^[0-9]{8}$/) {
+        # we have an absolute date
+        $date2 = substr $parsed_date, 4, 4;
+        $date1 = substr $parsed_date, 0, 4;
+        $typeofdate = 'e';
+      } elsif ($parsed_date =~ /^[0-9]{6}u*$/) {
+        $date1 = substr $parsed_date, 0, 4;
+        $date2 = (substr $parsed_date, 4, 2) . "uu";
+        $typeofdate = 'e';
+      } elsif ($parsed_date =~ /^[0-9]{4}u*$/) {
+        $date1 = substr $parsed_date, 0, 4;
+      }
+    };
+    return ($typeofdate, $date1, $date2) if $date1;
+    # field contains something else, try less strict matching
+    $datestr =~ s/[^0-9,\- ]+//g;
+    ($typeofdate, $date1, $date2) = _gDFFdateParse($datestr, 1) unless $recursing;
+    return ($typeofdate, $date1, $date2);
+  }
+
+  sub _formatYear {
+    my $datestr = shift;
+    return '####' unless $datestr;
+
+    return $datestr if length($datestr) == 4;
+
+    if ($datestr && $datestr < 1000 && $datestr > 0) {
+      while ($datestr && length($datestr) < 4) {
+        $datestr = '0' . $datestr; # leading 0 if year < 1000
+      }
+    }
+
+    return $datestr;
+  }
+
+  foreach my $field (['260', 'c'], ['264', 'c'], ['362', 'a']) {
+    if ($date1 && $date1 =~ /^[ u\|#]{4}$/ && $record->subfield($field->[0], $field->[1])) {
+      my $f260c = $record->subfield($field->[0], $field->[1]);
+      ($typeofdate, $date1, undef) = _gDFFdateParse($f260c);
+    }
+    if ($date2 && $date2 =~ /^[ u\|#]{4}$/ && $record->subfield($field->[0], $field->[1])) {
+      my $f260c = $record->subfield($field->[0], $field->[1]);
+      ($typeofdate, undef, $date2) = _gDFFdateParse($f260c);
+    }
+  }
+
+  $date1 = _formatYear($date1);
+  $date2 = _formatYear($date2);
+  return ($typeofdate, $date1, $date2);
 }
 
 =head2 incremental_pattern_barcode

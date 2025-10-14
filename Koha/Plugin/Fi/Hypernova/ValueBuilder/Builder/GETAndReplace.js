@@ -1,7 +1,7 @@
 let subroutines = {
   "f008_infer": (frameworkcode, inputElem) => {
     let f008 = inputElem.value+"";
-    let m = f008.match(/^(?<dateonfile>......)(?<p1>.........)(?<placeofpub>...)(?<p2>.................)(?<lang>...)(?<p3>..)$/);
+    let m = f008.match(/^(?<dateonfile>......)(?<typeofdate>.)(?<date1>....)(?<date2>....)(?<placeofpub>...)(?<p2>.................)(?<lang>...)(?<p3>..)$/);
     if (! m) {
       console.log(`Plugin::Fi::Hypernova::ValueBuilder:> f008_infer:> Given field 008='${f008}' couldn't be parsed to controlfield 008 character positions.`);
       alert(`Plugin::Fi::Hypernova::ValueBuilder:> f008_infer:> Given field 008='${f008}' couldn't be parsed to controlfield 008 character positions.`);
@@ -30,8 +30,52 @@ let subroutines = {
         m.groups.lang = lang;
       }
     }
+    if (m.groups.typeofdate.match(/^[ |#]$/)) {
+      m.groups.typeofdate = '|';
+    }
+    m.groups.typeofdate = '|';
+    if (m.groups.date2.match(/^[ u|#]{4}$/)) {
+      m.groups.date2 = '####'; // TODO
+    }
+    if (m.groups.date2.match(/^[ u|#]{4}$/)) {
+      m.groups.date2 = '####'; // TODO
+    }
+    [['260', 'c'], ['264', 'c'], ['362', 'a']].forEach(function(field) {
+      let datefield;
+      if (m.groups.date1.match(/^[ u|#]{4}$/)) {
+        datefield = mfw_vb_get_subfield_input_element(frameworkcode, field[0], field[1])?.value;
+        if (datefield && datefield.length) {
+          datefield = datefield.replace(/[\[\]]/g, "").replace(/^[cd]/, "").replace(/\.$/,"").trim();
 
-    return m.groups.dateonfile+m.groups.p1+m.groups.placeofpub+m.groups.p2+m.groups.lang+m.groups.p3;
+          if (datefield.match(/^[0-9]{1,4}$/)) {
+            // y[yyy]
+            m.groups.date1 = datefield;
+          } else if (dm = datefield.match(/^(?<date1>[0-9]{1,4})[-,](?<date2>[0-9]{1,4})$/)) {
+            // y[yyy]-y[yyy]
+            m.groups.date1 = dm.groups.date1;
+            m.groups.date2 = dm.groups.date2;
+          } else if (dm = datefield.match(/^(?<date1>[0-9]{1,4})-$/)) {
+            // yyyy-
+            m.groups.date1 = dm.groups.date1;
+            m.groups.date2 = 9999;
+            m.groups.typeofdate = 'c';
+          } else {
+            // exact
+            let date = new Date(Date.parse(datefield));
+            if (date instanceof Date && date.getFullYear().toString().match(/\d+/)) {
+              m.groups.date1 = date.getFullYear().toString();
+              m.groups.date2 = String(date.getMonth() + 1).padStart(2, '0') + String(date.getDate() + 1).padStart(2, '0');
+              m.groups.typeofdate = 'e';
+            } else {
+              m.groups.date1 = '####';
+              m.groups.date2 = '####';
+            }
+          }
+        }
+      }
+    });
+
+    return m.groups.dateonfile+m.groups.typeofdate+m.groups.date1+m.groups.date2+m.groups.placeofpub+m.groups.p2+m.groups.lang+m.groups.p3;
   },
 };
 

@@ -99,6 +99,30 @@ sub decorate_marcxml_for_signum_and_bib_class {
   return $biblio;
 }
 
+sub decorate_marcxml_for_publication_dates {
+  my ($biblio, $tagfield, $tagsubfield, $content) = @_;
+  unless ($biblio) {
+    $biblio = Koha::Biblio->search()->next;
+  }
+  die "\$biblio='$biblio' is not a Koha::Biblio!" unless ref($biblio) eq 'Koha::Biblio';
+
+  my $r = $biblio->record;
+  my @delete = $r->field('260');
+  $r->delete_fields(@delete);
+  @delete = $r->field('264');
+  $r->delete_fields(@delete);
+  @delete = $r->field('362');
+  $r->delete_fields(@delete);
+  $r->append_fields(MARC::Field->new($tagfield, '', '', $tagsubfield => $content));
+
+  @delete = $r->field('1..');
+  $r->delete_fields(@delete);
+  $r->append_fields(MARC::Field->new('100', '', '', 'a' => 'Meikäläinen, Matti'));
+
+  C4::Biblio::ModBiblio($r, $biblio->biblionumber, $biblio->frameworkcode);
+  return $biblio;
+}
+
 #Mock the directory Koha looks for plugins to be this Plugin's dev source code dir
 sub MockPluginsdir {
   $C4::Context::context->{config}->{config}->{pluginsdir} = Cwd::abs_path(File::Spec->catfile(__FILE__,'..','..','..'));

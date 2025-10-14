@@ -184,7 +184,7 @@ subtest("Scenario: Test VB Subroutines.", sub {
   };
 
   subtest "f008_infer" => sub {
-    plan tests => 6;
+    plan tests => 30;
     my $yymmdd = DateTime->now(time_zone => C4::Context->tz)->strftime("%y%m%d");
 
     $url->query({fieldcode => '008', subfieldcode => '@', currentvalue => '000000n||||####xx#||||||||||||f|||||||||'});
@@ -196,6 +196,55 @@ subtest("Scenario: Test VB Subroutines.", sub {
     $t->get_ok($url)
     ->status_is('200', 'Returns a reasonable value even without a biblio')
     ->json_like('/value', qr/^250102/, "date entered on file not overwritten");
+
+    $bib = Koha::Biblios->search()->next;
+    ok($bib, "A MARC record exists");
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '1970');
+
+    $url->query({fieldcode => '008', subfieldcode => '@', biblionumber => $bib->biblionumber});
+    $t->get_ok($url)
+    ->status_is('200', 'Returns a reasonable value')
+    ->json_like('/value', qr/.......1970####/, "publication date grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '1970-2024');
+    $t->get_ok($url)
+    ->json_like('/value', qr/.......19702024/, "publication date range grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '1970-');
+    $t->get_ok($url)
+    ->json_like('/value', qr/.......19709999/, "publication date range grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '888');
+    $t->get_ok($url)
+    ->json_like('/value', qr/.......0888####/, "publication date year < 1000 grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', 'Jan 1 1988');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e19880101/, "publication date absolute date grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '[1988].');
+    $t->get_ok($url)
+    ->json_like('/value', qr/.......1988####/, "publication date parsed from a [year]. syntax");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', 'Jan 1, 1988');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e19880101/, "publication date absolute date grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', '6/2/1910');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e19100602/, "publication date absolute date grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '260', 'c', 'June, 1970');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e19700601/, "publication date date without day defined grabbed from field 260c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '264', 'c', 'Dec 31 2025');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e20251231/, "publication date absolute date grabbed from field 264c");
+
+    t::Lib::Util::decorate_marcxml_for_publication_dates($bib, '362', 'a', '1.12.2025');
+    $t->get_ok($url)
+    ->json_like('/value', qr/......e20251201/, "publication date absolute date grabbed from field 362a");
   };
 });
 
