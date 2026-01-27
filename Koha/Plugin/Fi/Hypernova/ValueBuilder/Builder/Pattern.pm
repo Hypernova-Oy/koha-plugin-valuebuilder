@@ -20,7 +20,6 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Pattern;
 use Modern::Perl;
 use strict;
 use warnings;
-use Carp::Always;
 use overload '""' => 'TO_STRING';
 
 use Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Subroutine;

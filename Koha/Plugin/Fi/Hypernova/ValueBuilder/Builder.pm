@@ -20,7 +20,6 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder;
 use Modern::Perl;
 use strict;
 use warnings;
-use Carp::Always;
 
 use YAML::XS;
 $YAML::XS::LoadBlessed = 1;

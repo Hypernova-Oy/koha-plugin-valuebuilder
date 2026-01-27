@@ -20,7 +20,6 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Subroutine;
 use Modern::Perl;
 use strict;
 use warnings;
-use Carp::Always;
 use Date::Manip::Date;
 use DateTime::Format::Strptime;
 use Pod::Simple::Text;
