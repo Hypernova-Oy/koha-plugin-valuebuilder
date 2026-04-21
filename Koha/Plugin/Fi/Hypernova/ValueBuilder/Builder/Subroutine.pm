@@ -148,6 +148,64 @@ sub __bib_class {
   return join(" ", @sb);
 }
 
+=head2 date
+
+Returns the current date, or some other date based on the parameters.
+
+@PARAM1 String, the date format to use. Uses DateTime::Format::Strptime patterns. eg. '%Y-%m-%d'
+          Default, is to use the system preference 'dateformat'
+
+@PARAM2 String, A fixed date or a date interval to add to the current date. eg. '+3d' or '2025-01-01'
+          Default, is to use the current date without modification.
+
+=cut
+
+sub __date {
+  my ($self, $pattern, $dateFormat, $dateAdjustment) = @_;
+
+  my $dt;
+  if ($dateAdjustment && $dateAdjustment =~ /^\s*(:?(?<sign>[+-])(?<amount>\d+)\s*(?<unit>[smhdwMy]))|(:?(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2}))\s*$/) {
+    eval {
+      my %cps = %+;
+      if (exists $cps{sign} && exists $cps{amount} && exists $cps{unit}) {
+        $dt = DateTime->now(time_zone => C4::Context->tz);
+        my $duration = DateTime::Duration->new(
+          seconds => ($cps{unit} eq 's' ? $cps{amount} : 0),
+          minutes => ($cps{unit} eq 'm' ? $cps{amount} : 0),
+          hours => ($cps{unit} eq 'h' ? $cps{amount} : 0),
+          days => ($cps{unit} eq 'd' ? $cps{amount} : 0),
+          weeks => ($cps{unit} eq 'w' ? $cps{amount} : 0),
+          months => ($cps{unit} eq 'M' ? $cps{amount} : 0),
+          years => ($cps{unit} eq 'y' ? $cps{amount} : 0),
+        );
+        if ($cps{sign} && $cps{sign} eq '-') {
+          $dt->subtract($duration);
+        }
+        else {
+          $dt->add($duration);
+        }
+      }
+      elsif (exists $cps{year} && exists $cps{month} && exists $cps{day}) {
+        $dt = DateTime->new(
+          year => $cps{year},
+          month => $cps{month},
+          day => $cps{day},
+          time_zone => C4::Context->tz,
+        );
+      }
+    };
+    die "Unable to parse date from date adjustment '$dateAdjustment'" if ($@);
+  }
+  else {
+    $dt = DateTime->now(time_zone => C4::Context->tz);
+  }
+
+  return Koha::DateUtils::output_pref({dt => $dt, dateonly => 1}) if (not($dateFormat));
+
+  my $strp = DateTime::Format::Strptime->new(pattern => $dateFormat);
+  return $strp->format_datetime($dt);
+}
+
 =head2 f008_infer
 
 Populate controlfield 008 from other MARC21-fields, such as:
