@@ -19,6 +19,7 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Configure;
 
 use Modern::Perl;
 
+use Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder;
 use Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Subroutine;
 use Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Trigger;
 use Koha::Plugin::Fi::Hypernova::ValueBuilder::ValueBuilders;
