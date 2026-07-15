@@ -21,8 +21,6 @@ use Modern::Perl;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use Koha::Plugin::Fi::Hypernova::ValueBuilder;
-
 =head1 Koha::Plugin::Fi::Hypernova::ValueBuilder::Controller
 
 A class implementing the controller methods for the barcode generating endpoints
@@ -36,6 +34,8 @@ sub get_valuebuilder {
     my $frameworkcode = $c->validation->param('frameworkcode');
     my $fieldcode = $c->validation->param('fieldcode');
     my $subfieldcode = $c->validation->param('subfieldcode');
+
+    require Koha::Plugin::Fi::Hypernova::ValueBuilder;
 
     my $plugin = Koha::Plugin::Fi::Hypernova::ValueBuilder->new;
     my $builder = $plugin->valuebuilders->retrieve($frameworkcode, $fieldcode, $subfieldcode);
