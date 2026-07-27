@@ -20,7 +20,6 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Trigger;
 use Modern::Perl;
 use strict;
 use warnings;
-use Carp::Always;
 
 use File::Slurp;
 use FindBin;

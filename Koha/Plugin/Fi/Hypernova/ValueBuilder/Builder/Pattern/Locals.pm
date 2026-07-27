@@ -20,7 +20,6 @@ package Koha::Plugin::Fi::Hypernova::ValueBuilder::Builder::Pattern::Locals;
 use Modern::Perl;
 use strict;
 use warnings;
-use Carp::Always;
 
 =head SYNOPSIS
 
