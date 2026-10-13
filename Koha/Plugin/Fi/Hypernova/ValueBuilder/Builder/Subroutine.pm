@@ -232,8 +232,11 @@ sub __f008_infer {
     %cps = %+;
     if ($cps{dateonfile} =~ /^[0 |#]{6}$/) {
       $cps{dateonfile} = DateTime->now(time_zone => C4::Context->tz)->strftime('%y%m%d');
-    }    
-    ($cps{typeofdate}, $cps{date1}, $cps{date2}) = $self->_getDatesFromFields($record, $cps{typeofdate}, $cps{date1}, $cps{date2});
+    }
+    my ($typeofdate, $date1, $date2) = $self->_getDatesFromFields($record, $cps{typeofdate}, $cps{date1}, $cps{date2});
+    $cps{typeofdate} = $typeofdate if $cps{typeofdate} =~ /^[ |#n]$/ && defined $typeofdate;
+    $cps{date1} = $date1 if $cps{date1} =~ /^[ |#]{4}$/ && defined $date1;
+    $cps{date2} = $date2 if $cps{date2} =~ /^[ |#]{4}$/ && defined $date2;
     if ($cps{placeofpub} =~ /^[ |#]{3}$/ && $record && $record->subfield('044', 'a')) {
       $cps{placeofpub} = $record->subfield('044', 'a');
       while (length($cps{placeofpub}) < 3) {
