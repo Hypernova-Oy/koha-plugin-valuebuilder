@@ -28,7 +28,7 @@ use Koha::Plugin::Fi::Hypernova::ValueBuilder::ValueBuilders;
 use t::Lib;
 
 subtest("Scenario: Persistence tests.", sub {
-  plan tests => 5;
+  plan tests => 3;
 
   my $plugin = Koha::Plugin::Fi::Hypernova::ValueBuilder->new();
 

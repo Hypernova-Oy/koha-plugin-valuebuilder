@@ -42,7 +42,7 @@ subtest("Scenario: Get Trigger documentation.", sub {
   });
 
   subtest("Test documentation", sub {
-    plan tests => 8;
+    plan tests => 10;
 
     for (my $i=0 ; $i<@{$triggers} ; $i++) {
       ok($triggers->[$i]->{name}, "Then a name is defined");
