@@ -134,4 +134,17 @@ sub __onsave {
   return 'JAVASCRIPT';
 }
 
+=head2 onsaveoverwrite
+
+Generate the value when the form is submitted. Overwrites previous value.
+
+END
+=cut
+
+sub __onsaveoverwrite {
+  my ($self) = @_;
+
+  return 'JAVASCRIPT';
+}
+
 1;

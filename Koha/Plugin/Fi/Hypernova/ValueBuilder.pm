@@ -131,7 +131,7 @@ sub install {
       fieldcode => '008',
       subfieldcode => '@',
       pattern => '<f008_infer>',
-      trigger => 'triggered',
+      trigger => 'onsaveoverwrite',
     }));
     $self->valuebuilders->store();
   };

@@ -132,7 +132,7 @@ function mfw_vb_valuebuilder(pattern, frameworkcode, fieldcode, subfieldcode, tr
     alert('Error: '+error);
   })
   .finally(() => {
-    if (trigger === "onsave") {
+    if (trigger === "onsave" || trigger === "onsaveoverwrite") {
       mfw_vb_maybe_do_form_submit(trigger);
     }
   });
@@ -160,7 +160,7 @@ function mfw_vb_bind_valuebuilder(pattern, frameworkcode, fieldcode, subfieldcod
       mfw_vb_valuebuilder(pattern, frameworkcode, fieldcode, subfieldcode, trigger);
     }
   }
-  else if (trigger === "onsave") {
+  else if (trigger === "onsave" || trigger === "onsaveoverwrite") {
     let formSubmitButtons = mfw_vb_get_form_submit_button_elements();
     for (let formButton of formSubmitButtons) {
       formButton.addEventListener('click', function(event) {
@@ -170,7 +170,9 @@ function mfw_vb_bind_valuebuilder(pattern, frameworkcode, fieldcode, subfieldcod
           if (input.value) {
             // Prevent fetching the ValueBuilder value if the input is already filled
             mfw_vb_maybe_do_form_submit(trigger);
-            return;
+            if (trigger === "onsave") {
+              return;
+            }
           }
           mfw_vb_valuebuilder(pattern, frameworkcode, fieldcode, subfieldcode, trigger);
         }
@@ -255,7 +257,7 @@ function mfw_vb_get_biblionumber() {
   return document.getElementsByName("biblionumber")[0]?.value || 0;
 }
 function mfw_vb_maybe_do_form_submit(trigger) {
-  if (trigger === "onsave") {
+  if (trigger === "onsave" || trigger === "onsaveoverwrite") {
     formSubmissionValueBuildersWaitingToComplete--;
     if (formSubmissionValueBuildersWaitingToComplete <= 0) {
       formSubmissionTriggeringEvent.target.dispatchEvent(
