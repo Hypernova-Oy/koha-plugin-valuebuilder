@@ -394,7 +394,7 @@ END
 sub __incremental_pattern_barcode {
   my ($self, $pattern, $barcodePattern) = @_;
 
-  sub replaceYear {
+  my $replaceYear = sub {
     if ($_[0] && $_[0] =~ m/YEAR/) {
       my $str = $_[0];
       my $year = DateTime->now(time_zone => C4::Context->tz)->year();
@@ -402,7 +402,19 @@ sub __incremental_pattern_barcode {
       return $str;
     }
     return $_[0];
-  }
+  };
+  my $replaceBranchcode = sub {
+    if ($_[0] && $_[0] =~ m/BRANCHCODE/) {
+      my $str = $_[0];
+      my $branchcode = $pattern->locals->branchcode;
+      $str =~ s/BRANCHCODE/$branchcode/g;
+      return $str;
+    }
+    return $_[0];
+  };
+  my $replaceFunc = sub {
+    return $replaceBranchcode->($replaceYear->($_[0]));
+  };
 
   my $barcode = $barcodePattern;
 
@@ -417,8 +429,8 @@ sub __incremental_pattern_barcode {
   my $id = 0;
   my $dbh = C4::Context->dbh;
 
-  my $prefix = replaceYear($barcodePattern->{prefix});
-  my $suffix = replaceYear($barcodePattern->{suffix});
+  my $prefix = $replaceFunc->($barcodePattern->{prefix});
+  my $suffix = $replaceFunc->($barcodePattern->{suffix});
   my $prefixLength = length($prefix);
   my $suffixLength = length($suffix);
   my $substrLength = (length($barcode)-$prefixLength-$suffixLength);

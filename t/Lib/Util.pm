@@ -70,6 +70,7 @@ sub build_valuebuilders_advanced {
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => '0', trigger => 'prefill',  pattern => '<incremental_pattern_barcode(PREFIX00000000SUFFIX)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => '1', trigger => 'prefill',  pattern => '<incremental_pattern_barcode(00000000)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => '2', trigger => 'prefill',  pattern => '<incremental_pattern_barcode(YEARv000)>'});
+  $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => '3', trigger => 'prefill',  pattern => '<incremental_pattern_barcode(BRANCHCODE0000)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'a', trigger => 'trigger',  pattern => '<bib_class(,a)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'b', trigger => 'trigger',  pattern => '<bib_class(084,a)>'});
   $vbs->add({frameworkcode => '', fieldcode => '952', subfieldcode => 'x', trigger => 'trigger',  pattern => '<bib_class(084,a)><signum>'});

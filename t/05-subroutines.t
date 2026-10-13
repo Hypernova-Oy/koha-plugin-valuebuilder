@@ -61,7 +61,7 @@ subtest("Scenario: Get Subroutine documentation.", sub {
   });
 
   subtest("Test documentation", sub {
-    plan tests => 10;
+    plan tests => 12;
 
     for (my $i=0 ; $i<@{$subroutines} ; $i++) {
       my $sub = $subroutines->[$i];
@@ -75,7 +75,7 @@ subtest("Scenario: Get Subroutine documentation.", sub {
 subtest("Scenario: Test VB Subroutines.", sub {
   my ($url, $vbs, $bib);
 
-  plan tests => 8;
+  plan tests => 9;
 
   subtest("Given Valuebuilders", sub {
     plan tests => 2;
@@ -175,12 +175,31 @@ subtest("Scenario: Test VB Subroutines.", sub {
     ->json_like('/value', qr/${year}v001/, "Initial increment");
 
     my $item = Koha::Items->search()->next;
-    $item->barcode('00000099');
-    ok($item->store, "Barcode to test incrementing to 100");
+    $item->barcode("${year}v100");
+    ok($item->store, "Barcode to test incrementing to ${year}v100");
 
     $t->get_ok($url)
     ->status_is('200')
-    ->json_like('/value', qr/${year}v002/, "Increment to 100");
+    ->json_like('/value', qr/${year}v101/, "Increment to ${year}101");
+  };
+
+  subtest "incremental_pattern_barcode(BRANCHCODE0000)" => sub {
+    plan tests => 7;
+    my $year = DateTime->now(time_zone => C4::Context->tz)->year();
+
+    $url->query({subfieldcode => '3', branchcode => 'CPL'});
+    $t->get_ok($url);
+    $t->status_is('200')
+    ->json_like('/value', qr/CPL0001/, "Initial increment");
+
+
+    my $item = Koha::Items->search()->next;
+    $item->barcode("CPL0100");
+    ok($item->store, "Barcode to test incrementing to CPL0100");
+
+    $t->get_ok($url)
+    ->status_is('200')
+    ->json_like('/value', qr/CPL0101/, "Increment to CPL0101");
   };
 
   subtest "f008_infer" => sub {
