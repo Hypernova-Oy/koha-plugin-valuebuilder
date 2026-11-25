@@ -64,10 +64,10 @@ cp "$PM_FILE" "dist/$PM_FILE"
 # its release version in `our $VERSION = "..."` / `our $DATE_UPDATED = "..."`
 # (with a #PLACEHOLDER marker in the sources), so rewrite those declarations.
 NEW_VERSION="$VERSION" perl -i -pe \
-    's{^(our\s+\$VERSION\s*=\s*)"[^"]*";?\s*(?:#PLACEHOLDER)?\s*$}{${1}"$ENV{NEW_VERSION}";}' \
+    's{^(our[ \t]+\$VERSION[ \t]*=[ \t]*)"[^"]*";?[ \t]*(?:#PLACEHOLDER)?[ \t]*$}{${1}"$ENV{NEW_VERSION}";}' \
     "dist/$PM_FILE"
 NEW_DATE_UPDATED="$DATE_UPDATED" perl -i -pe \
-    's{^(our\s+\$DATE_UPDATED\s*=\s*)"[^"]*";?\s*(?:#PLACEHOLDER)?\s*$}{${1}"$ENV{NEW_DATE_UPDATED}";}' \
+    's{^(our[ \t]+\$DATE_UPDATED[ \t]*=[ \t]*)"[^"]*";?[ \t]*(?:#PLACEHOLDER)?[ \t]*$}{${1}"$ENV{NEW_DATE_UPDATED}";}' \
     "dist/$PM_FILE"
 
 # --- build reproducible zip + checksums + provenance ------------------------
