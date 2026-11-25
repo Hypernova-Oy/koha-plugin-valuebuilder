@@ -1,0 +1,6 @@
+# Build artefacts
+dist/
+*.kpz
+*.kpz.sha256
+*.kpz.sha512
+*.kpz.buildinfo
