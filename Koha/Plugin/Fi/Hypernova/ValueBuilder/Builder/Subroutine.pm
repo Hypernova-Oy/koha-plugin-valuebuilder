@@ -22,6 +22,7 @@ use strict;
 use warnings;
 use Date::Manip::Date;
 use DateTime::Format::Strptime;
+use Encode qw(decode_utf8);
 use Pod::Simple::Text;
 
 use C4::Context;
@@ -450,6 +451,88 @@ sub __incremental_pattern_barcode {
   return $barcode;
 }
 
+=head2 _signum_source
+
+Finds the MARC subfield used as the signum source and the number of
+non-filing characters to skip. Shared by B<signum> and B<signum_word>.
+
+@PARAM1 MARC::Record, the record to read.
+
+@RETURNS (String, Integer) the source text and the non-filing character
+count, or (undef, 0) when no source field exists.
+
+END
+=cut
+
+sub _signum_source {
+  my ($record) = @_;
+
+  #Use one of the Main Entries or the Title Statement. If this is a video,
+  #the title statement is preferred over the uniform title (leader 06 = 'g').
+  my $leader = $record->leader();
+  my ($signumSource, $nonFillingCharacters) = (undef, 0);
+
+  if ($signumSource = $record->subfield('100', 'a')) {
+
+  }
+  elsif ($signumSource = $record->subfield('110', 'a')) {
+
+  }
+  elsif ($signumSource = $record->subfield('111', 'a')) {
+
+  }
+  elsif (substr($leader,6,1) eq 'g' && ($signumSource = $record->subfield('245', 'a'))) {
+    $nonFillingCharacters = _non_filing_indicator($record->field('245')->indicator(2));
+  }
+  elsif ($signumSource = $record->subfield('130', 'a')) {
+    $nonFillingCharacters = _non_filing_indicator($record->field('130')->indicator(1));
+  }
+  elsif ($signumSource = $record->subfield('245', 'a')) {
+    $nonFillingCharacters = _non_filing_indicator($record->field('245')->indicator(2));
+  }
+
+  return (undef, 0) unless defined $signumSource;
+  return ($signumSource, $nonFillingCharacters);
+}
+
+sub _non_filing_indicator {
+  my ($indicator) = @_;
+
+  return 0 unless (defined($indicator) && $indicator =~ /^\d$/);
+  return $indicator;
+}
+
+=head2 _signum_word_from_record
+
+Extracts the first word from the signum source of a MARC record.
+
+@PARAM1 MARC::Record, the record to read.
+
+@RETURNS String, the first word as-is (UTF-8 preserved, no case conversion)
+with trailing punctuation removed, or an empty string when no source field
+exists.
+
+END
+=cut
+
+sub _signum_word_from_record {
+  my ($record) = @_;
+
+  my ($signumSource, $nonFillingCharacters) = _signum_source($record);
+  return '' unless (defined($signumSource) && length($signumSource));
+
+  #The non-filing indicator tells how many leading characters to skip.
+  $signumSource = substr($signumSource, $nonFillingCharacters) if $nonFillingCharacters;
+  $signumSource =~ s/^\s+//;
+
+  my ($word) = $signumSource =~ /^(\S+)/;
+  return '' unless defined $word;
+
+  $word =~ s/[\p{P}\s]+$//;
+
+  return $word;
+}
+
 =head2 signum
 
 Generates the signum from the main author or title.
@@ -464,35 +547,37 @@ sub __signum {
   die "ERR_CANNOT_FIND_BIBLIO '$biblionumber'" unless $biblio;
   my $record = $biblio->record;
 
-  #Get the proper SIGNUM (important) Use one of the Main Entries or the Title Statement
-  my $leader = $record->leader(); #If this is a video, we calculate the signum differently, 06 = 'g'
-  my $signumSource; #One of fields 100, 110, 111, 130, or 245 if 1XX is missing
-  my $nonFillingCharacters = 0;
-
-  if ($signumSource = $record->subfield('100', 'a')) {
-
-  }
-  elsif ($signumSource = $record->subfield('110', 'a')) {
-
-  }
-  elsif ($signumSource = $record->subfield('111', 'a')) {
-
-  }
-  elsif (substr($leader,6,1) eq 'g' && ($signumSource = $record->subfield('245', 'a'))) {
-    $nonFillingCharacters = $record->field('245')->indicator(2);
-  }
-  elsif ($signumSource = $record->subfield('130', 'a')) {
-    $nonFillingCharacters = $record->field('130')->indicator(1);
-    $nonFillingCharacters = 0 if (not(defined($nonFillingCharacters)) || $nonFillingCharacters eq ' ');
-  }
-  elsif ($signumSource = $record->subfield('245', 'a')) {
-    $nonFillingCharacters = $record->field('245')->indicator(2);
-  }
+  #Get the proper SIGNUM (important)
+  my ($signumSource, $nonFillingCharacters) = _signum_source($record);
   if ($signumSource) {
     return uc(substr($signumSource, $nonFillingCharacters, 3));
   }
 
   return '';
+}
+
+=head2 signum_word
+
+Extracts the first word from the main author entry (100, 110, 111 or 130) or
+from the title statement (245) when no 1XX field exists. The non-filing
+indicator is honoured (130$ind1, 245$ind2) before the word is extracted.
+
+The word is returned exactly as it appears in the record (UTF-8 characters
+preserved, no case conversion) with trailing punctuation removed.
+
+  "Surname, Firstname" => "Surname"
+  "Auto Autonen"       => "Auto"
+
+END
+=cut
+
+sub __signum_word {
+  my ($self, $pattern) = @_;
+  my $biblionumber = $pattern->locals->biblionumber;
+  my $biblio = Koha::Biblios->find($biblionumber);
+  die "ERR_CANNOT_FIND_BIBLIO '$biblionumber'" unless $biblio;
+
+  return _signum_word_from_record($biblio->record);
 }
 
 =head2 text

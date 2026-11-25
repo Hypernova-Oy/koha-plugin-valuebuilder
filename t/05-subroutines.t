@@ -61,7 +61,7 @@ subtest("Scenario: Get Subroutine documentation.", sub {
   });
 
   subtest("Test documentation", sub {
-    plan tests => 12;
+    plan tests => 14;
 
     for (my $i=0 ; $i<@{$subroutines} ; $i++) {
       my $sub = $subroutines->[$i];
